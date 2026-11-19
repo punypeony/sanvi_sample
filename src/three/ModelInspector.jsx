@@ -1,20 +1,13 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { ContactShadows, OrbitControls, useCursor, useProgress } from '@react-three/drei';
+import { ContactShadows, OrbitControls, useCursor } from '@react-three/drei';
 import * as THREE from 'three';
 import { PARTS, PARTS_BY_ID } from './headphoneParts';
 import { COLORWAYS_BY_ID, DEFAULT_COLORWAY_ID } from './colorways';
 import HeadphoneModel from './HeadphoneModel';
 import CameraRig from './CameraRig';
 import { DarkStudio, SafeBoundary } from './Studio';
-import {
-  HoverTip,
-  LoadingBar,
-  PartCallouts,
-  SpecPanel,
-  TourBar,
-  calloutCss,
-} from './inspectorOverlays';
+import { HoverTip, PartCallouts, SpecPanel, TourBar, calloutCss } from './inspectorOverlays';
 
 export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
   const palette = (COLORWAYS_BY_ID[colorId] ?? COLORWAYS_BY_ID[DEFAULT_COLORWAY_ID]).palette;
@@ -28,9 +21,6 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
   const [focus, setFocus] = useState(null);
   const [dragging, setDragging] = useState(false);
 
-  const { progress } = useProgress();
-  const ready = progress >= 100;
-
   const wrapRef = useRef(null);
   const tipRef = useRef(null);
   const lastPartId = useRef(null);
@@ -41,6 +31,12 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
     () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
     []
   );
+
+  // The assemble intro starts the moment the model is ready. Skipped for reduced motion.
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [introDone, setIntroDone] = useState(reduceMotion);
+  const intro = !introDone;
+  const onIntroDone = useCallback(() => setIntroDone(true), []);
 
   const onMove = useCallback((ev) => {
     if (!wrapRef.current || !tipRef.current) return;
@@ -64,6 +60,7 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
 
   const onPartClick = useCallback(
     (id) => {
+      if (intro) return; // ignore clicks while the parts are flying in
       if (!exploded) {
         setExploded(true);
         return;
@@ -71,7 +68,7 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
       if (!id) return;
       togglePart(id);
     },
-    [exploded, togglePart]
+    [exploded, togglePart, intro]
   );
 
   const reassemble = () => {
@@ -105,11 +102,11 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [exploded, step]);
 
-  useCursor(hovering && (!exploded || !!hoveredId), 'pointer');
+  useCursor(hovering && !intro && (!exploded || !!hoveredId), 'pointer');
 
   let tipTitle = '';
   let tipSub = '';
-  if (hovering && !exploded) tipTitle = 'Click to disassemble';
+  if (hovering && !intro && !exploded) tipTitle = 'Click to disassemble';
   else if (hovering && exploded && hoveredId) {
     tipTitle = PARTS_BY_ID[hoveredId].name;
     tipSub = hoveredId === selectedId ? 'Click to close' : 'Click for specs';
@@ -118,19 +115,18 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
   if (selectedId) lastPartId.current = selectedId;
   const panelPart = PARTS_BY_ID[selectedId ?? lastPartId.current];
   const tourIndex = selectedId ? PARTS.findIndex((p) => p.id === selectedId) : -1;
-  const idle = !reduceMotion && !exploded && !hovering && !dragging;
+  const idle = !reduceMotion && !exploded && !hovering && !dragging && !intro;
 
   return (
     <div ref={wrapRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <style>{calloutCss}</style>
-      <LoadingBar progress={progress} ready={ready} />
 
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          opacity: ready ? 1 : 0,
-          transition: 'opacity 0.9s ease',
+          opacity: modelLoaded ? 1 : 0,
+          transition: 'opacity 0.5s ease',
         }}
       >
         <Canvas
@@ -154,6 +150,9 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
             </SafeBoundary>
             <HeadphoneModel
               exploded={exploded}
+              intro={intro}
+              onIntroDone={onIntroDone}
+              onLoaded={setModelLoaded}
               idle={idle}
               hoveredId={exploded ? hoveredId : null}
               selectedId={selectedId}
