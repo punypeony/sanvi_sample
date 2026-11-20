@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ShoppingBag, ArrowUpRight } from 'lucide-react';
 import ModelInspector from './three/ModelInspector';
-import { COLORWAYS, COLORWAYS_BY_ID, DEFAULT_COLORWAY_ID } from './three/colorways';
-import ColorPicker from './components/ColorPicker';
-import AudioRings from './components/AudioRings';
-import AudioControls from './components/AudioControls';
+import { COLORWAYS_BY_ID, DEFAULT_COLORWAY_ID } from './three/colorways';
+import Navbar from './sections/Navbar';
+import Hero from './sections/Hero';
+import Teardown from './sections/Teardown';
+import Colorways from './sections/Colorways';
+import Sound from './sections/Sound';
+import Reviews from './sections/Reviews';
+import { ScrollTrigger } from './scroll/gsap';
+import { useSmoothScroll } from './scroll/useSmoothScroll';
+import { useStageCover } from './scroll/useStageCover';
 import './App.css';
 
 const STORAGE_KEY = 'noir-color';
@@ -38,75 +43,37 @@ function App() {
     }
   }, [colorId]);
 
+  useSmoothScroll();
+  // After the sections: their pins must be measured before the cover ranges.
+  useStageCover();
+
+  // Web fonts change text heights, which moves every trigger below them.
+  useEffect(() => {
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  }, []);
+
   return (
-    <main className="homepage">
-      <nav className="navbar">
-        <a href="#" className="logo">
-          SANVI<span> AUDIO</span>
-        </a>
+    <>
+      <a href="#main" className="skip-link">
+        Skip to content
+      </a>
+      <Navbar />
+      <ModelInspector colorId={colorId} />
 
-        <div className="nav-links">
-          <a href="#">Home</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#products">Products</a>
-          <a href="#about">About</a>
-          <a href="#contact">Contact</a>
-        </div>
+      <main id="main" className="page">
+        <Hero colorId={colorId} colorway={colorway} onColorChange={setColorId} />
 
-        <a href="#products" className="shop-button">
-          Shop <ShoppingBag size={15} />
-        </a>
-      </nav>
+        <Teardown />
+        <Colorways />
+        <Sound />
+        <Reviews />
 
-      <section className="hero">
-        <div className="product-model">
-          {/* Faint rings that pulse with the sample / noise demo (behind the 3D canvas) */}
-          <AudioRings />
-
-          {/* One glow per color, cross-faded, so the backdrop follows the headphones */}
-          {COLORWAYS.map((c) => (
-            <div
-              key={c.id}
-              className="model-light"
-              style={{
-                background: `radial-gradient(circle, ${c.glow[0]} 0%, ${c.glow[1]} 38%, transparent 72%)`,
-                opacity: c.id === colorId ? 1 : 0,
-                transition: 'opacity 0.8s ease',
-                transform: 'translate(-50%, -50%) scale(calc(1 + var(--bass, 0) * 0.2))',
-              }}
-            />
-          ))}
-          <ModelInspector colorId={colorId} />
-        </div>
-
-        <ColorPicker value={colorId} onChange={setColorId} />
-        <AudioControls />
-
-        <div className="hero-actions">
-          <a href="#products" className="outline-button">
-            Buy Now
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, opacity: 0.7 }}>
-              ·
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: colorway.swatch,
-                  border: '1px solid rgba(255,255,255,0.4)',
-                }}
-              />
-              {colorway.name}
-            </span>
-          </a>
-
-          <a href="#about" className="light-button">
-            Learn More <ArrowUpRight size={15} />
-          </a>
-        </div>
-      </section>
-    </main>
+        {/* TEMPORARY stand-in, replaced by the real section in step (e). */}
+        <section id="buy" className="section section--opaque placeholder" aria-label="Buy" data-stage-cover>
+          <h2>Buy</h2>
+        </section>
+      </main>
+    </>
   );
 }
 

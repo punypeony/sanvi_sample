@@ -5,8 +5,8 @@ import { COLORWAYS } from '../three/colorways';
 const css = `
 .nr-picker {
   position: absolute;
-  left: min(24%, calc(50% - 300px));
-  top: 30%;
+  left: 6vw;
+  bottom: 13%;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -52,10 +52,9 @@ const css = `
   100% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
 }
 
-@media (max-width: 650px) {
+@media (max-width: 700px) {
   .nr-picker {
     left: 50%;
-    top: auto;
     bottom: 19%;
     transform: translateX(-50%);
     flex-direction: row;

@@ -3,10 +3,7 @@ import { useAudioDemo } from '../audio/useAudioDemo';
 // Self-contained (styles live here), like ColorPicker.
 const css = `
 .nr-audio {
-  position: absolute;
-  left: 6.5%;
-  bottom: 13%;
-  z-index: 5;
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -96,12 +93,8 @@ const css = `
 
 @media (max-width: 650px) {
   .nr-audio {
-    left: 50%;
-    bottom: 27%;
-    transform: translateX(-50%);
     flex-direction: row;
     flex-wrap: wrap;
-    justify-content: center;
     align-items: center;
   }
   .nr-meta { display: none; }

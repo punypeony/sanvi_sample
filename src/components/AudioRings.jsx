@@ -1,5 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { getLevels, getSnapshot } from '../audio/audioEngine';
+import { scrollStore } from '../scroll/scrollStore';
+
+// How much harder the rings and the --bass glow pulse while Sound is on screen.
+const SOUND_RING_BOOST = 1.85;
 
 // Draws behind the 3D canvas:
 //  - while the sample plays: faint rings that swell with the bass
@@ -32,7 +36,7 @@ export default function AudioRings() {
 
     let bass = 0;
     let wobble = 0;
-    let raf;
+    let raf = 0;
 
     const ring = (cx, cy, r0, amp, sign, t, alpha) => {
       g.beginPath();
@@ -55,10 +59,12 @@ export default function AudioRings() {
       const t = ms / 1000;
       const snap = getSnapshot();
       const lv = getLevels();
+      // Louder rings and a stronger glow only while this section is the one on screen.
+      const boost = !reduce && scrollStore.sound > 0 ? SOUND_RING_BOOST : 1;
 
       bass += (lv.bass - bass) * 0.35;
       wobble += ((snap.anc === 'noisy' ? 1 : 0) - wobble) * 0.04;
-      host.style.setProperty('--bass', reduce ? '0' : bass.toFixed(3));
+      host.style.setProperty('--bass', reduce ? '0' : (bass * boost).toFixed(3));
 
       g.clearRect(0, 0, w, h);
       const cx = w / 2;
@@ -66,19 +72,20 @@ export default function AudioRings() {
       const base = Math.min(w * 0.34, h * 0.5);
 
       if (bass > 0.01) {
-        for (let i = 0; i < 3; i++) {
-          const rr = base * (1 + i * 0.14) + bass * (26 - i * 6);
+        const nRings = boost > 1 ? 4 : 3;
+        for (let i = 0; i < nRings; i++) {
+          const rr = base * (1 + i * 0.14) * (boost > 1 ? 1.08 : 1) + bass * boost * (26 - i * 6);
           g.beginPath();
           g.ellipse(cx, cy, rr * 1.1, rr * 0.92, 0, 0, Math.PI * 2);
-          g.strokeStyle = `rgba(255,255,255,${(0.05 + 0.2 * bass) * (1 - i * 0.28)})`;
-          g.lineWidth = 1.2;
+          g.strokeStyle = `rgba(255,255,255,${(0.05 + 0.2 * bass * boost) * (1 - i * 0.22)})`;
+          g.lineWidth = boost > 1 ? 1.6 : 1.2;
           g.stroke();
         }
       }
 
       if (wobble > 0.01) {
-        const r0 = base * 1.34;
-        const amp = 14 * wobble;
+        const r0 = base * 1.34 * (boost > 1 ? 1.12 : 1);
+        const amp = 14 * wobble * boost;
         ring(cx, cy, r0, amp, 1, t, 0.32);
         ring(cx, cy, r0, amp, -1, t, 0.16);
       }

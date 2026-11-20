@@ -1,9 +1,12 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Center, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { MODEL_URL, prepareModel } from './prepareModel';
-import { PARTS_BY_ID } from './headphoneParts';
+import { DRACO_PATH, MODEL_URL, prepareModel } from './prepareModel';
+import { PARTS, PARTS_BY_ID } from './headphoneParts';
+import { COLORWAYS, COLORWAYS_BY_ID, DEFAULT_COLORWAY_ID } from './colorways';
+import { scrollStore, takeSnap } from '../scroll/scrollStore';
+import { modelFocus, paintHighlight, subscribeHighlight } from './modelFocus';
 
 // ---- Assemble intro tuning ----
 const INTRO_DELAY = 0.15; // seconds before the first part moves
@@ -12,7 +15,20 @@ const INTRO_DUR = 1.0; // how long each part takes to fly in
 const FLY_DIST = 1.6; // start distance, as a multiple of the part's explode offset
 const INTRO_TOTAL = INTRO_DELAY + INTRO_STAGGER + INTRO_DUR;
 
+// ---- Scroll-driven motion tuning ----
+// How quickly the model follows the scroll position. Higher = tighter.
+const SCROLL_EXPLODE_DAMP = 6;
+const SPIN_DAMP = 5;
+
 const easeOutQuart = (x) => 1 - Math.pow(1 - x, 4);
+
+// Target colors per colorway, built once so the frame loop never allocates.
+const COLOR_TARGETS = Object.fromEntries(
+  COLORWAYS.map((c) => [
+    c.id,
+    Object.fromEntries(Object.entries(c.palette).map(([k, v]) => [k, new THREE.Color(v)])),
+  ])
+);
 
 function HeadphoneModel({
   exploded,
@@ -29,15 +45,19 @@ function HeadphoneModel({
   onMeasure,
   onSides,
   apiRef,
-  calloutEls,
-  palette,
+  getCalloutEl,
+  colorId,
+  onColorShown,
+  reduceMotion,
 }) {
-  const { scene } = useGLTF(MODEL_URL);
+  const { scene } = useGLTF(MODEL_URL, DRACO_PATH);
 
   // Start in the chosen color so a saved choice doesn't flash black first.
-  const startPalette = useRef(palette).current;
+  const [startPalette] = useState(
+    () => (COLORWAYS_BY_ID[colorId] ?? COLORWAYS_BY_ID[DEFAULT_COLORWAY_ID]).palette
+  );
 
-  const { model, scale, items, partMeshes, fitRadius, tintables, anchors, sides } = useMemo(
+  const { model, scale, items, partMeshes, partFocus, fitRadius, tintables, anchors, sides } = useMemo(
     () => prepareModel(scene, startPalette),
     // palette is captured once via startPalette; later changes fade in useFrame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,17 +121,28 @@ function HeadphoneModel({
   }, [apiRef, model, partMeshes]);
 
   const t = useRef(0);
+  const spin = useRef(0);
   const idleAmt = useRef(0);
   const floatRef = useRef(null);
   const lastVis = useRef(-1);
+  const resumeSeen = useRef(scrollStore.resumeId);
+  const poseSeen = useRef(scrollStore.poseEpoch);
+  const shownGlow = useRef(null);
   const tmp = useMemo(() => new THREE.Vector3(), []);
-
-  const targetColors = useMemo(
-    () => Object.fromEntries(Object.entries(palette).map(([k, v]) => [k, new THREE.Color(v)])),
-    [palette]
-  );
+  const focusScale = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((state, delta) => {
+    const interactive = scrollStore.mode === 'interactive';
+    // After a render pause the pose may be far off; jump straight to it while
+    // the canvas is still covered instead of animating from a stale state.
+    const resumed = scrollStore.resumeId !== resumeSeen.current;
+    resumeSeen.current = scrollStore.resumeId;
+    // A scroll jump (navbar, fast flick) bumps poseEpoch so we land on the
+    // pose instead of damping across everything in between.
+    const jumped = scrollStore.poseEpoch !== poseSeen.current;
+    poseSeen.current = scrollStore.poseEpoch;
+    const snap = resumed || jumped || takeSnap() || (reduceMotion && !interactive);
+
     // Clamp dt so a hitchy first frame (shader compile) can't skip the intro.
     const dt = Math.min(delta, 1 / 30);
 
@@ -123,35 +154,67 @@ function HeadphoneModel({
       }
     }
 
-    t.current = THREE.MathUtils.damp(t.current, exploded ? 1 : 0, 4, delta);
-    items.forEach(({ obj, base, target }, i) => {
+    // Hero: the click toggle. Everywhere else: the scroll timeline.
+    const goalT = interactive ? (exploded ? 1 : 0) : scrollStore.explodeProgress;
+    t.current = snap
+      ? goalT
+      : THREE.MathUtils.damp(t.current, goalT, interactive ? 4 : SCROLL_EXPLODE_DAMP, delta);
+    for (let i = 0; i < items.length; i++) {
+      const { obj, base, target } = items[i];
       obj.position.lerpVectors(base, target, t.current);
       const f = flights[i];
       const e = easeOutQuart(THREE.MathUtils.clamp((introT.current - f.delay) / INTRO_DUR, 0, 1));
       if (e < 1) obj.position.addScaledVector(f.offset, 1 - e);
-    });
+    }
 
-    const k = 1 - Math.exp(-6 * delta);
+    // The scroll can override the color (colorways section); otherwise the user's pick.
+    const activeColor = COLOR_TARGETS[scrollStore.colorId] ? scrollStore.colorId : colorId;
+    const targetColors = COLOR_TARGETS[activeColor] ?? COLOR_TARGETS[DEFAULT_COLORWAY_ID];
+    const k = snap ? 1 : 1 - Math.exp(-6 * delta);
     for (const { material, kind } of tintables) {
       material.color?.lerp(targetColors[kind], k);
     }
 
-    idleAmt.current = THREE.MathUtils.damp(idleAmt.current, idle ? 1 : 0, 1.5, delta);
+    // Backdrop glow follows the same color (only told when it changes).
+    if (activeColor !== shownGlow.current && onColorShown?.(activeColor)) {
+      shownGlow.current = activeColor;
+    }
+
+    spin.current = snap || reduceMotion
+      ? scrollStore.rotationY
+      : THREE.MathUtils.damp(spin.current, scrollStore.rotationY, SPIN_DAMP, delta);
+
+    // Idle float is a hero-only thing; the scroll owns the pose elsewhere.
+    idleAmt.current = THREE.MathUtils.damp(idleAmt.current, idle && interactive ? 1 : 0, 1.5, delta);
     pulse.current = THREE.MathUtils.damp(pulse.current, 0, 7, delta);
     const g = floatRef.current;
     if (g) {
       const time = state.clock.elapsedTime;
       g.position.y = Math.sin(time * 0.9) * 0.06 * idleAmt.current;
-      g.rotation.y = Math.sin(time * 0.4) * 0.12 * idleAmt.current;
+      g.rotation.y = Math.sin(time * 0.4) * 0.12 * idleAmt.current + spin.current;
       g.scale.setScalar(1 + 0.018 * pulse.current);
     }
 
-    // Callout labels: project each anchor to the screen.
-    const vis = THREE.MathUtils.clamp((t.current - 0.8) / 0.2, 0, 1);
+    // Part focus for the scroll timeline, in world space. Only once the parts
+    // are actually open: the cached sphere is the exploded position.
+    const focusIndex = interactive ? -1 : scrollStore.activePartIndex;
+    const focusPart = focusIndex >= 0 ? PARTS[focusIndex] : null;
+    const focusLocal = focusPart ? partFocus[focusPart.id] : null;
+    if (focusLocal && t.current > 0.85) {
+      model.updateWorldMatrix(true, false);
+      modelFocus.point.copy(focusLocal.center).applyMatrix4(model.matrixWorld);
+      modelFocus.radius = focusLocal.radius * Math.abs(model.getWorldScale(focusScale).x);
+      modelFocus.index = focusIndex;
+    } else if (modelFocus.index !== -1) {
+      modelFocus.index = -1;
+    }
+
+    // Callout labels: project each anchor to the screen. Hero only.
+    const vis = interactive ? THREE.MathUtils.clamp((t.current - 0.8) / 0.2, 0, 1) : 0;
     if (vis > 0 || lastVis.current !== 0) {
       const { camera, size } = state;
       for (const a of anchors) {
-        const el = calloutEls?.current?.[a.id];
+        const el = getCalloutEl?.(a.id);
         if (!el) continue;
         if (vis > 0) {
           a.mesh.updateWorldMatrix(true, false);
@@ -162,25 +225,29 @@ function HeadphoneModel({
           const y = (-tmp.y * 0.5 + 0.5) * size.height;
           el.style.transform = `translate(${x}px, ${y}px)`;
         }
+        const active = vis > 0.95;
         el.style.opacity = String(vis);
-        el.style.pointerEvents = vis > 0.95 ? 'auto' : 'none';
+        el.style.pointerEvents = active ? 'auto' : 'none';
+        // Hidden callouts must not be reachable with Tab either.
+        if (el.inert === active) el.inert = !active;
       }
       lastVis.current = vis;
     }
+    // Runs before CameraRig (this component mounts first, same priority).
+    // A positive priority would make R3F skip its own render and blank the canvas.
   });
 
+  // Highlight: the hero's hover/selection, or the timeline's part. The scroll
+  // side calls notifyHighlight() only when the part index changes.
   useEffect(() => {
-    Object.entries(partMeshes).forEach(([id, meshes]) => {
-      const glow = id === selectedId ? 0.35 : id === hoveredId ? 0.18 : 0;
-      meshes.forEach((m) => {
-        const mats = Array.isArray(m.material) ? m.material : [m.material];
-        mats.forEach((mat) => {
-          if (!mat.emissive) return;
-          mat.emissive.set('#ffffff');
-          mat.emissiveIntensity = glow;
-        });
-      });
-    });
+    const apply = () => {
+      const onTimeline = scrollStore.mode === 'scroll' && scrollStore.activePartIndex >= 0;
+      const sel = onTimeline ? PARTS[scrollStore.activePartIndex].id : selectedId;
+      const hov = onTimeline ? null : hoveredId;
+      paintHighlight(partMeshes, sel, hov);
+    };
+    apply();
+    return subscribeHighlight(apply);
   }, [hoveredId, selectedId, partMeshes]);
 
   const hit = (e, fn) => {
@@ -207,6 +274,6 @@ function HeadphoneModel({
   );
 }
 
-useGLTF.preload(MODEL_URL);
+useGLTF.preload(MODEL_URL, DRACO_PATH);
 
 export default HeadphoneModel;

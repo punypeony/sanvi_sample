@@ -247,10 +247,16 @@ export function togglePlay() {
   else startSample();
 }
 
+// Sample and the noise demo. Safe to call when nothing is running.
+export function stopPlayback() {
+  if (snapshot.playing) stopSample();
+  if (snapshot.anc !== 'off') setAnc('off');
+}
+
 // Background timers get throttled in hidden tabs, which would stutter the loop.
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden && snapshot.playing) stopSample();
+    if (document.hidden) stopPlayback();
   });
 }
 

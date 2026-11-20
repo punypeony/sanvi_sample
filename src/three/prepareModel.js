@@ -1,7 +1,10 @@
 import * as THREE from 'three';
-import { findPartByMeshName } from './headphoneParts';
+import { PARTS, findPartByMeshName } from './headphoneParts';
 
+// Built by scripts/compress-model.mjs from models-src/headphones.original.glb.
 export const MODEL_URL = '/models/headphones.glb';
+// Self-hosted Draco decoder (copied from three/examples/jsm/libs/draco/gltf).
+export const DRACO_PATH = '/draco/';
 
 // Surface finish per part group. Colors come from colorways.js.
 const SURFACE = {
@@ -140,15 +143,36 @@ export function prepareModel(scene, startPalette) {
     items.push({ obj, base, target });
   });
 
+  if (import.meta.env.DEV) {
+    const missing = PARTS.filter((p) => !partMeshes[p.id]).map((p) => p.id);
+    if (missing.length) console.warn('[prepareModel] parts with no matching mesh:', missing);
+  }
+
   const { anchors, sides } = buildAnchors(byPart, size.x);
 
-  // Measure the fully exploded layout so the camera can frame every part.
+  // Measure the fully exploded layout so the camera can frame every part,
+  // and cache each part's focus sphere in the model's local space. The rig
+  // maps it through matrixWorld at runtime (no per-frame bounds rebuild).
   items.forEach(({ obj, target }) => obj.position.copy(target));
   cloned.updateMatrixWorld(true);
   const fitRadius =
     new THREE.Box3().setFromObject(cloned).getBoundingSphere(new THREE.Sphere()).radius * scale;
+
+  const partFocus = {};
+  const worldScale = cloned.getWorldScale(new THREE.Vector3()).x || 1;
+  for (const id in partMeshes) {
+    const box = new THREE.Box3();
+    const meshes = partMeshes[id];
+    for (let i = 0; i < meshes.length; i++) box.expandByObject(meshes[i]);
+    const sphere = new THREE.Sphere();
+    box.getBoundingSphere(sphere);
+    const radius = sphere.radius / worldScale;
+    cloned.worldToLocal(sphere.center);
+    partFocus[id] = { center: sphere.center, radius };
+  }
+
   items.forEach(({ obj, base }) => obj.position.copy(base));
   cloned.updateMatrixWorld(true);
 
-  return { model: cloned, scale, items, partMeshes, fitRadius, tintables, anchors, sides };
+  return { model: cloned, scale, items, partMeshes, partFocus, fitRadius, tintables, anchors, sides };
 }

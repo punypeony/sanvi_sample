@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 dist
+
+# Uncompressed source model. public/models/headphones.glb is the Draco build.
+models-src/
 dist-ssr
 *.local
 

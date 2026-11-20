@@ -121,6 +121,7 @@ export function SpecPanel({ part, open, onClose }) {
   if (!part) return null;
   return (
     <div
+      inert={!open}
       style={{
         ...ui.panel,
         opacity: open ? 1 : 0,
@@ -219,6 +220,7 @@ export function PartCallouts({ sides, calloutEls, onToggle, onHover, onLeave }) 
     <div
       key={id}
       className="nr-callout"
+      inert
       ref={(el) => {
         calloutEls.current[id] = el;
       }}
@@ -250,6 +252,7 @@ export function TourBar({ tourIndex, partCount, onStep, onReassemble }) {
         alignItems: 'center',
         gap: 10,
         zIndex: 5,
+        pointerEvents: 'auto',
       }}
     >
       <button style={ui.round} aria-label="Previous part" onClick={() => onStep(-1)}>
