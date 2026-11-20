@@ -65,10 +65,10 @@ export function collectColors(list) {
     });
 }
 
-export function parseShopQuery(params, list) {
-  const colors = new Set(collectColors(list).map((color) => color.id));
+export function parseShopQuery(params, colors) {
+  const known = Array.isArray(colors) ? new Set(colors.map((color) => color.id)) : null;
   const category = params.get('category');
-  const color = params.get('color');
+  const rawColor = params.get('color');
   const sort = params.get('sort');
   let min = money(params.get('min'));
   let max = money(params.get('max'));
@@ -77,12 +77,18 @@ export function parseShopQuery(params, list) {
     min = max;
     max = swap;
   }
+  const pageRaw = Number(params.get('page'));
+  const colorOk = typeof rawColor === 'string'
+    && /^[a-z0-9-]{1,40}$/.test(rawColor)
+    && (!known || known.has(rawColor));
   return {
     category: CATEGORY_IDS.has(category) ? category : null,
-    color: colors.has(color) ? color : null,
+    color: colorOk ? rawColor : null,
     sort: SORT_IDS.has(sort) ? sort : 'featured',
     min,
     max,
+    q: (params.get('q') || '').trim().slice(0, 80),
+    page: Number.isInteger(pageRaw) && pageRaw > 0 ? pageRaw : 1,
   };
 }
 
@@ -93,6 +99,14 @@ export function serializeShopQuery(query) {
   if (query.min != null) next.set('min', String(query.min));
   if (query.max != null) next.set('max', String(query.max));
   if (query.sort && query.sort !== 'featured') next.set('sort', query.sort);
+  if (query.q) next.set('q', query.q);
+  if (query.page > 1) next.set('page', String(query.page));
+  return next;
+}
+
+export function catalogParams(query) {
+  const next = serializeShopQuery(query);
+  next.set('limit', '24');
   return next;
 }
 

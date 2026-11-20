@@ -1,6 +1,9 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Outlet, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { useAccountSync } from './auth/account';
+import RequireUser from './auth/RequireUser';
 import { isStoryPath } from './data/products';
+import { useCatalogCache } from './data/useCatalog';
 import { COLORWAYS_BY_ID, DEFAULT_COLORWAY_ID } from './three/colorways';
 import ShopSkeleton from './shop/ShopSkeleton';
 import Navbar from './sections/Navbar';
@@ -10,11 +13,18 @@ import { useRouteScroll } from './scroll/useRouteScroll';
 import './App.css';
 
 const Stage = lazy(() => import('./stage/Stage'));
+const AdminApp = lazy(() => import('./admin/AdminApp'));
 const Home = lazy(() => import('./pages/Home'));
 const Shop = lazy(() => import('./pages/Shop'));
 const Product = lazy(() => import('./pages/Product'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Forgot = lazy(() => import('./pages/Forgot'));
+const Reset = lazy(() => import('./pages/Reset'));
+const Account = lazy(() => import('./pages/Account'));
+const OrderStatus = lazy(() => import('./pages/OrderStatus'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 const STORAGE_KEY = 'noir-color';
@@ -38,6 +48,16 @@ function RouteFallback() {
   const { pathname } = useLocation();
   if (pathname === '/shop') return <ShopSkeleton />;
   return <p className="sr-only">Loading</p>;
+}
+
+function CatalogSync() {
+  useCatalogCache();
+  return null;
+}
+
+function AccountSync() {
+  useAccountSync();
+  return null;
 }
 
 function Shell() {
@@ -74,6 +94,8 @@ function Shell() {
 
   return (
     <>
+      <CatalogSync />
+      <AccountSync />
       <a href="#main" className="skip-link">
         Skip to content
       </a>
@@ -96,12 +118,27 @@ function Shell() {
 export default function App() {
   return (
     <Routes>
+      <Route
+        path="admin/*"
+        element={(
+          <Suspense fallback={<p className="admin-boot">Loading admin</p>}>
+            <AdminApp />
+          </Suspense>
+        )}
+      />
       <Route element={<Shell />}>
         <Route index element={<Home />} />
         <Route path="shop" element={<Shop />} />
         <Route path="products/:slug" element={<Product />} />
         <Route path="cart" element={<Cart />} />
         <Route path="checkout" element={<Checkout />} />
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+        <Route path="forgot" element={<Forgot />} />
+        <Route path="reset" element={<Reset />} />
+        <Route path="account" element={<RequireUser><Account /></RequireUser>} />
+        <Route path="orders" element={<OrderStatus />} />
+        <Route path="orders/:orderNumber" element={<OrderStatus />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -38,6 +38,13 @@ button {
   border-radius: 4px;
 }
 
+.admin-boot {
+  min-height: 100vh;
+  padding: 24px;
+  background: #f4f1ea;
+  color: #1c1917;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1273,6 +1280,15 @@ button {
   gap: 10px;
 }
 
+.account-link {
+  max-width: 8rem;
+  overflow: hidden;
+  color: #c7c7c7;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .cart-button {
   position: relative;
   display: grid;
@@ -2405,6 +2421,21 @@ button {
   font-size: 14px;
 }
 
+.shop-search {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.shop-search input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #0c0c0c;
+  color: #fff;
+  font: inherit;
+}
+
 .shop-sort {
   display: inline-flex;
   align-items: center;
@@ -2412,6 +2443,24 @@ button {
   margin-left: auto;
   color: #c8ccd4;
   font-size: 13px;
+}
+
+.shop-pager {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.account-orders {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.account-orders li {
+  padding: 12px 0;
+  border-bottom: 1px solid #333;
 }
 
 .shop-sort select {
@@ -2752,7 +2801,9 @@ button {
   font-size: 14px;
 }
 
-.checkout-form input {
+.checkout-form input,
+.checkout-form textarea,
+.checkout-form select {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #333;
@@ -2762,9 +2813,35 @@ button {
   font: inherit;
 }
 
-.checkout-form input:focus-visible {
+.checkout-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.checkout-form input:focus-visible,
+.checkout-form textarea:focus-visible,
+.checkout-form select:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 3px;
+}
+
+.checkout-form .checkout-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkout-form .checkout-check input {
+  width: auto;
+}
+
+.checkout-form button:disabled {
+  opacity: 0.6;
+}
+
+.form-alert {
+  margin: 0;
+  color: #ffb4b4;
 }
 
 .checkout-payment {

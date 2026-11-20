@@ -10,6 +10,14 @@ lerna-debug.log*
 node_modules
 dist
 
+# Admin image uploads. The storage seam writes here in development.
+server/uploads
+
+# Secrets. .env.example is the documented template.
+.env
+.env.*
+!.env.example
+
 # Uncompressed source model. public/models/headphones.glb is the Draco build.
 models-src/
 dist-ssr

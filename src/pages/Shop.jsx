@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { products } from '../data/products';
 import { addToCart, setCartOpen } from '../cart/useCart';
+import { useProducts } from '../data/useCatalog';
 import {
   SORTS,
   activeFilterCount,
-  collectColors,
-  filterProducts,
   parseShopQuery,
   serializeShopQuery,
 } from '../shop/shopQuery';
 import { FilterDrawer, ShopFilters } from '../shop/ShopFilters';
 import ShopCard from '../shop/ShopCard';
+import ShopSkeleton from '../shop/ShopSkeleton';
 import PageReady from './PageReady';
 
 const NARROW_QUERY = '(max-width: 700px)';
@@ -40,9 +39,11 @@ export default function Shop() {
   const [status, setStatus] = useState('');
   const closeDrawer = useCallback(() => setDrawer(false), []);
   const narrow = useNarrow(closeDrawer);
-  const query = useMemo(() => parseShopQuery(params, products), [params]);
-  const colors = useMemo(() => collectColors(products), []);
-  const shown = useMemo(() => filterProducts(products, query), [query]);
+  const draft = useMemo(() => parseShopQuery(params), [params]);
+  const result = useProducts(draft);
+  const colors = result.data ? result.data.colors : undefined;
+  const query = useMemo(() => parseShopQuery(params, colors), [params, colors]);
+  const shown = result.data?.products || [];
   const active = activeFilterCount(query);
   const closePicker = useCallback(() => setPickerId(null), []);
 
@@ -52,13 +53,14 @@ export default function Shop() {
   }, [query, params, setParams]);
 
   const update = (patch) => {
-    const next = serializeShopQuery({ ...query, ...patch });
-    setParams(next);
+    const next = { ...query, ...patch };
+    if (!Object.prototype.hasOwnProperty.call(patch, 'page')) next.page = 1;
+    setParams(serializeShopQuery(next));
     setPickerId(null);
   };
 
   const clearFilters = () => {
-    update({ category: null, color: null, min: null, max: null });
+    update({ category: null, color: null, min: null, max: null, q: '' });
   };
 
   const add = (product, colorId) => {
@@ -69,19 +71,35 @@ export default function Shop() {
     setCartOpen(true);
   };
 
-  const countLabel = `${shown.length} ${shown.length === 1 ? 'product' : 'products'}`;
+  if (result.isPending && !result.data) return <ShopSkeleton />;
+
+  if (result.isError && !result.data) {
+    return (
+      <article className="route-page shop-page">
+        <p className="route-kicker">Shop</p>
+        <h1>The line</h1>
+        <p className="form-alert" role="alert">{result.error.message}</p>
+        <button type="button" className="route-button" onClick={() => result.refetch()}>Try again</button>
+        <PageReady title="Shop — SANVI Audio" description="Headphones, parts, and accessories." />
+      </article>
+    );
+  }
+
+  const total = result.data?.total ?? shown.length;
+  const countLabel = `${total} ${total === 1 ? 'product' : 'products'}`;
 
   return (
     <article className="route-page shop-page">
       <p className="route-kicker">Shop</p>
       <h1>The line</h1>
       <p className="route-lead">Prices and photos are placeholders.</p>
+      {result.isError ? <p className="form-alert" role="alert">{result.error.message}</p> : null}
       <div className="shop-layout">
         {narrow ? null : (
           <aside className="shop-filters-aside">
             <ShopFilters
               query={query}
-              colors={colors}
+              colors={colors || []}
               headingId="shop-filter-heading"
               active={active}
               onChange={update}
@@ -106,6 +124,15 @@ export default function Shop() {
             <p className="shop-count" aria-live="polite" aria-atomic="true">
               {countLabel}
             </p>
+            <label className="shop-search">
+              <span className="sr-only">Search</span>
+              <input
+                type="search"
+                value={query.q}
+                placeholder="Search"
+                onChange={(event) => update({ q: event.target.value })}
+              />
+            </label>
             <label className="shop-sort">
               Sort
               <select value={query.sort} onChange={(event) => update({ sort: event.target.value })}>
@@ -141,13 +168,24 @@ export default function Shop() {
               ))}
             </ul>
           )}
+          {result.data && result.data.pages > 1 ? (
+            <div className="shop-pager">
+              <button type="button" disabled={query.page <= 1} onClick={() => update({ page: query.page - 1 })}>
+                Previous
+              </button>
+              <p>Page {result.data.page} of {result.data.pages}</p>
+              <button type="button" disabled={query.page >= result.data.pages} onClick={() => update({ page: query.page + 1 })}>
+                Next
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
       {narrow && drawer ? (
-        <FilterDrawer count={shown.length} onClose={closeDrawer}>
+        <FilterDrawer count={total} onClose={closeDrawer}>
           <ShopFilters
             query={query}
-            colors={colors}
+            colors={colors || []}
             active={active}
             onChange={update}
             onClear={clearFilters}

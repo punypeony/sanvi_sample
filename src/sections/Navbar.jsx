@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router';
 import { ShoppingBag } from 'lucide-react';
 import CartDrawer from '../cart/CartDrawer';
+import { useAccount } from '../auth/account';
 import { setCartOpen, useCart, useCartOpen } from '../cart/useCart';
 import { flagshipPath } from '../data/products';
 import { ScrollTrigger, prefersReducedMotion, useGSAP } from '../scroll/gsap';
@@ -27,6 +28,10 @@ export default function Navbar() {
   const { pathname } = useLocation();
   const onHome = pathname === '/';
   const { count } = useCart();
+  const account = useAccount();
+  const signedIn = account.data;
+  const accountLabel = account.isPending ? 'Account' : signedIn ? signedIn.name : 'Sign in';
+  const accountTo = signedIn || account.isPending ? '/account' : '/login';
   const open = useCartOpen();
   const closeCart = useCallback(() => setCartOpen(false), []);
 
@@ -160,6 +165,13 @@ export default function Navbar() {
       </nav>
 
       <div className="nav-actions">
+        <Link
+          to={accountTo}
+          className="account-link"
+          aria-current={pathname === '/account' || pathname === '/login' ? 'page' : undefined}
+        >
+          {accountLabel}
+        </Link>
         <button
           type="button"
           className="cart-button"

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { getProductById } from '../data/products';
 import { addToCart, setCartOpen } from '../cart/useCart';
+import ProductReviews from '../shop/ProductReviews';
 import ProductGallery from '../components/ProductGallery';
 import ProductImage from '../components/ProductImage';
 import PageReady from './PageReady';
@@ -21,23 +22,6 @@ const SWATCH = {
   noir: '#111111',
 };
 
-function reviewsFor(product) {
-  return [
-    {
-      id: `${product.id}-r1`,
-      name: 'Alex Kim',
-      rating: Math.min(5, Math.round(product.rating)),
-      text: `Placeholder review of ${product.name}. Not a real customer.`,
-    },
-    {
-      id: `${product.id}-r2`,
-      name: 'Jordan Ellis',
-      rating: Math.max(1, Math.round(product.rating) - 1),
-      text: 'Placeholder. The star count on this page is a stand-in too.',
-    },
-  ];
-}
-
 function defaultColor(product) {
   return product.colorways.find((item) => item.stock === 'in_stock') || product.colorways[0];
 }
@@ -48,8 +32,8 @@ export default function Standard({ product }) {
   const [note, setNote] = useState('');
   const offer = product.colorways.find((item) => item.id === colorId) || defaultColor(product);
   const inStock = offer.stock === 'in_stock';
-  const fits = product.fitsIds.map(getProductById).filter(Boolean);
-  const related = product.relatedIds.map(getProductById).filter(Boolean);
+  const fits = product.fits || product.fitsIds.map(getProductById).filter(Boolean);
+  const related = product.related || product.relatedIds.map(getProductById).filter(Boolean);
   const showCompare = product.compareAtPrice && offer.price < product.compareAtPrice;
 
   const add = () => {
@@ -181,22 +165,7 @@ export default function Standard({ product }) {
         </table>
       </section>
 
-      <section id="reviews" className="product-section" aria-labelledby="reviews-title">
-        <h2 id="reviews-title">Reviews</h2>
-        <p>
-          {product.rating} / 5 from {product.reviewCount.toLocaleString('en-US')} reviews. The notes below are placeholders.
-        </p>
-        <ul className="product-reviews">
-          {reviewsFor(product).map((review) => (
-            <li key={review.id}>
-              <p>
-                {review.rating} / 5 · {review.name}
-              </p>
-              <p>{review.text}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <ProductReviews product={product} />
 
       {related.length > 0 && (
         <section className="product-section" aria-labelledby="related-title">
