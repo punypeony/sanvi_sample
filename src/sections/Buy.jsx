@@ -183,7 +183,7 @@ export default function Buy({ colorId, onColorChange }) {
   const add = () => {
     if (!inStock) return;
     press(false);
-    addToCart(offer.id, qty);
+    addToCart(product.id, offer.id, qty);
     setCartOpen(true);
     setAdded(true);
     setNote(`Added ${qty} ${offer.color.name} to the cart.`);

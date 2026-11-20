@@ -6,6 +6,7 @@ import { DRACO_PATH, MODEL_URL, prepareModel } from './prepareModel';
 import { PARTS, PARTS_BY_ID } from './headphoneParts';
 import { COLORWAYS, COLORWAYS_BY_ID, DEFAULT_COLORWAY_ID } from './colorways';
 import { scrollStore, takeSnap } from '../scroll/scrollStore';
+import { retainModel } from './stageSession';
 import { modelFocus, paintHighlight, subscribeHighlight } from './modelFocus';
 
 // ---- Assemble intro tuning ----
@@ -103,6 +104,10 @@ function HeadphoneModel({
   useEffect(() => {
     onLoaded?.(true);
   }, [onLoaded]);
+
+  useEffect(() => {
+    retainModel(scene, model);
+  }, [scene, model]);
 
   // Lets the page ask where a part is (for the camera to focus on it).
   useEffect(() => {

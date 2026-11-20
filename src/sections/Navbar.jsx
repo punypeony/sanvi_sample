@@ -1,7 +1,9 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router';
 import { ShoppingBag } from 'lucide-react';
 import CartDrawer from '../cart/CartDrawer';
 import { setCartOpen, useCart, useCartOpen } from '../cart/useCart';
+import { flagshipPath } from '../data/products';
 import { ScrollTrigger, prefersReducedMotion, useGSAP } from '../scroll/gsap';
 import { subscribeScroll } from '../scroll/useSmoothScroll';
 
@@ -14,17 +16,23 @@ const TOP_EDGE = 6;
 
 const LINKS = [
   { href: '#top', label: 'Home' },
-  { href: '#teardown', label: 'Products' },
-  { href: '#buy', label: 'Pricing' },
-  { href: '#sound', label: 'About' },
+  { to: '/shop', label: 'Products' },
+  { to: flagshipPath, label: 'Pricing' },
+  { href: '#flagship', label: 'About' },
   { href: '#contact', label: 'Contact' },
 ];
 
 export default function Navbar() {
   const ref = useRef(null);
-  const { lines, count } = useCart();
+  const { pathname } = useLocation();
+  const onHome = pathname === '/';
+  const { count } = useCart();
   const open = useCartOpen();
   const closeCart = useCallback(() => setCartOpen(false), []);
+
+  useEffect(() => {
+    setCartOpen(false);
+  }, [pathname]);
 
   // Gets a backdrop once the page has moved, so links stay readable over content.
   // Hides on the way down, comes back on the way up, while focused, or when
@@ -120,17 +128,34 @@ export default function Navbar() {
 
   return (
     <header ref={ref} className="navbar">
-      <a href="#top" className="logo" aria-label="SANVI Audio, back to top">
-        SANVI<span> AUDIO</span>
-      </a>
+      {onHome ? (
+        <a href="#top" className="logo" aria-label="SANVI Audio, back to top">
+          SANVI<span> AUDIO</span>
+        </a>
+      ) : (
+        <Link to="/" className="logo" aria-label="SANVI Audio, home">
+          SANVI<span> AUDIO</span>
+        </Link>
+      )}
 
       <nav aria-label="Primary">
         <ul className="nav-links">
-          {LINKS.map((l) => (
-            <li key={l.href}>
-              <a href={l.href}>{l.label}</a>
+          {onHome ? (
+            LINKS.map((l) => (
+              <li key={l.label}>
+                {l.to ? <Link to={l.to}>{l.label}</Link> : <a href={l.href}>{l.label}</a>}
+              </li>
+            ))
+          ) : (
+            <li>
+              <Link to="/">Home</Link>
             </li>
-          ))}
+          )}
+          <li>
+            <Link to="/cart" aria-current={pathname === '/cart' ? 'page' : undefined}>
+              Cart
+            </Link>
+          </li>
         </ul>
       </nav>
 
@@ -144,11 +169,11 @@ export default function Navbar() {
           <ShoppingBag size={15} aria-hidden="true" />
           {count > 0 && <span className="cart-badge">{count}</span>}
         </button>
-        <a href="#buy" className="shop-button">
+        <Link to="/shop" className="shop-button" aria-current={pathname === '/shop' ? 'page' : undefined}>
           Shop
-        </a>
+        </Link>
       </div>
-      {open && <CartDrawer lines={lines} onClose={closeCart} />}
+      {open && <CartDrawer onClose={closeCart} />}
     </header>
   );
 }

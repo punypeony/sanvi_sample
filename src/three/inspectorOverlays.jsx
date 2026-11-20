@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import { PARTS_BY_ID } from './headphoneParts';
 
 const ui = {
@@ -170,6 +171,11 @@ export function SpecPanel({ part, open, onClose }) {
           </div>
         ))}
       </div>
+      {part.replacementSlug && (
+        <Link to={`/products/${part.replacementSlug}`} style={{ ...ui.pill, display: 'inline-flex', marginTop: 16, textDecoration: 'none' }}>
+          Buy replacement
+        </Link>
+      )}
     </div>
   );
 }

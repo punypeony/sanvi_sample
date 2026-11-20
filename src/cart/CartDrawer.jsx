@@ -1,34 +1,34 @@
-import { useEffect, useRef, useState } from 'react';
-import { product } from '../data/product';
-import { COLORWAYS_BY_ID } from '../three/colorways';
-import { checkout } from './useCart';
+import { useEffect, useRef } from 'react';
+import { Link } from 'react-router';
+import { useCart } from './useCart';
+import CartDetails from './CartDetails';
 
-export default function CartDrawer({ lines, onClose }) {
+export default function CartDrawer({ onClose }) {
   const ref = useRef(null);
-  const [message, setMessage] = useState('');
+  const { lines } = useCart();
 
   useEffect(() => {
     const root = ref.current;
     const previously = document.activeElement;
     const focusable = () =>
-      [...root.querySelectorAll('button, a')].filter((el) => !el.disabled);
+      [...root.querySelectorAll('button, a[href], input')].filter((el) => !el.disabled);
     focusable()[0]?.focus();
 
-    const onKey = (e) => {
-      if (e.key === 'Escape') {
+    const onKey = (event) => {
+      if (event.key === 'Escape') {
         onClose();
         return;
       }
-      if (e.key !== 'Tab') return;
+      if (event.key !== 'Tab') return;
       const items = focusable();
       if (!items.length) return;
       const first = items[0];
       const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
         last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
         first.focus();
       }
     };
@@ -40,11 +40,6 @@ export default function CartDrawer({ lines, onClose }) {
     };
   }, [onClose]);
 
-  const pay = () => {
-    checkout();
-    setMessage('Checkout is a placeholder. Nothing was charged.');
-  };
-
   return (
     <>
       <button type="button" className="cart-backdrop" aria-label="Close cart" onClick={onClose} />
@@ -55,31 +50,19 @@ export default function CartDrawer({ lines, onClose }) {
             Close
           </button>
         </div>
+        <CartDetails />
+        <Link to="/cart" className="cart-more" onClick={onClose}>
+          View cart
+        </Link>
         {lines.length === 0 ? (
-          <p>Your cart is empty.</p>
+          <button type="button" className="cart-checkout" disabled>
+            Checkout
+          </button>
         ) : (
-          <ul className="cart-lines">
-            {lines.map((line) => {
-              const color = COLORWAYS_BY_ID[line.colorId];
-              const offer = product.colorways.find((item) => item.id === line.colorId);
-              return (
-                <li key={line.colorId}>
-                  <span>{color ? color.name : line.colorId}</span>
-                  <span>
-                    × {line.quantity}
-                    {offer ? ` · $${offer.price * line.quantity}` : ''}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
+          <Link to="/checkout" className="cart-checkout" onClick={onClose}>
+            Checkout
+          </Link>
         )}
-        <p className="cart-note" aria-live="polite">
-          {message}
-        </p>
-        <button type="button" className="cart-checkout" onClick={pay} disabled={lines.length === 0}>
-          Checkout
-        </button>
       </div>
     </>
   );

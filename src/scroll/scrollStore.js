@@ -41,6 +41,27 @@ export function requestSnap() {
   scrollStore.snapSeen = 0;
 }
 
+// Back to the hero pose. Called when a route unmounts, after that route's
+// ScrollTriggers are gone, so a later page cannot inherit a pin, a color
+// override, or a paused canvas.
+export function resetPose() {
+  scrollStore.explodeProgress = 0;
+  scrollStore.activePartIndex = -1;
+  scrollStore.rotationY = 0;
+  scrollStore.colorId = null;
+  scrollStore.cameraDistance = 1;
+  scrollStore.framing = 'home';
+  scrollStore.shiftX = 0;
+  scrollStore.shiftY = 0;
+  scrollStore.rim = 0;
+  scrollStore.sound = 0;
+  scrollStore.resumeId++;
+  scrollStore.poseEpoch++;
+  requestSnap();
+  setMode('interactive');
+  setVisible(true);
+}
+
 const listeners = new Set();
 
 function notify(key) {

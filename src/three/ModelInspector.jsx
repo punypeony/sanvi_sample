@@ -11,6 +11,7 @@ import { HoverTip, PartCallouts, SpecPanel, TourBar, calloutCss } from './inspec
 import AudioRings from '../components/AudioRings';
 import { scrollStore, subscribe } from '../scroll/scrollStore';
 import { prefersReducedMotion } from '../scroll/gsap';
+import { holdStage, playIntroThisVisit } from './stageSession';
 
 // Stops the whole render loop (model, rig, contact shadows) while an opaque
 // section covers the canvas, and restarts it the moment it is uncovered.
@@ -80,6 +81,9 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
   const glowEls = useRef({});
 
   const [reduceMotion] = useState(prefersReducedMotion);
+  // First mount of this tab plays the assemble intro. Navigating away and
+  // back does not. Reduced motion skips it entirely.
+  const [playIntro] = useState(() => !reduceMotion && playIntroThisVisit());
 
   // DOM writes requested from the frame loop (no React state per frame).
   const getCalloutEl = useCallback((id) => calloutEls.current[id], []);
@@ -96,11 +100,13 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
     if (el) el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
   }, []);
 
-  // The assemble intro starts the moment the model is ready. Skipped for reduced motion.
+  // The assemble intro starts the moment the model is ready.
   const [modelLoaded, setModelLoaded] = useState(false);
-  const [introDone, setIntroDone] = useState(reduceMotion);
+  const [introDone, setIntroDone] = useState(!playIntro);
   const intro = !introDone;
   const onIntroDone = useCallback(() => setIntroDone(true), []);
+
+  useEffect(() => holdStage(), []);
 
   // Only the hero lets you click / orbit the model. Leaving it hands control
   // to the scroll timeline, so close anything that was open.
@@ -229,7 +235,12 @@ export default function ModelInspector({ colorId = DEFAULT_COLORWAY_ID }) {
         </div>
       </div>
 
-      <div ref={canvasWrapRef} className="stage-canvas" style={{ opacity: modelLoaded ? 1 : 0 }}>
+      <div
+        ref={canvasWrapRef}
+        className="stage-canvas"
+        data-intro={playIntro ? 'play' : 'skip'}
+        style={{ opacity: modelLoaded ? 1 : 0 }}
+      >
         <Canvas
           dpr={[1, 2]}
           camera={{ position: [11.9, 0.1, -1.1], fov: 20 }}

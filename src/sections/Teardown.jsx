@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Link } from 'react-router';
 import { PARTS } from '../three/headphoneParts';
 import { gsap, MQ, ScrollTrigger, SplitText, useGSAP } from '../scroll/gsap';
 import { scrollStore } from '../scroll/scrollStore';
@@ -204,6 +205,7 @@ function mountPin(section, mobile) {
       const leaving = i === prev && prev !== index && !instant;
       if (i !== index && !leaving) setFinal(cards[i], false);
       cards[i].setAttribute('aria-hidden', i === index ? 'false' : 'true');
+      cards[i].inert = i !== index;
     }
     section.dataset.part = String(index);
     notifyHighlight();
@@ -403,6 +405,11 @@ function PartBody({ part, index }) {
           </div>
         ))}
       </dl>
+      {part.replacementSlug && (
+        <Link className="part-replace" to={`/products/${part.replacementSlug}`}>
+          Buy replacement
+        </Link>
+      )}
     </div>
   );
 }
@@ -441,6 +448,7 @@ export default function Teardown() {
             key={part.id}
             className={`teardown-card teardown-card--${i % 2 === 0 ? 'right' : 'left'}`}
             aria-hidden="true"
+            inert
           >
             <PartBody part={part} index={i} />
           </article>

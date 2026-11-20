@@ -26,6 +26,7 @@ export const PARTS = [
   {
     id: 'headband-cushion',
     name: 'Headband Cushion',
+    replacementSlug: 'headband-cushion',
     meshNames: ['Headband_cushion'],
     distance: 0.55,
     description: 'Pressure-spreading pad under the headband.',
@@ -62,6 +63,7 @@ export const PARTS = [
   {
     id: 'ear-cushion',
     name: 'Ear Cushions',
+    replacementSlug: 'ear-cushions',
     meshNames: ['ear_puff', 'ear_puff001'],
     distance: 0.5,
     description: 'Oval pads that seal around the ear for passive isolation.',

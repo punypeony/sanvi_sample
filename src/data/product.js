@@ -1,28 +1,16 @@
-// Placeholder catalogue payload, shaped like an API response.
-// `product` is the product document. Its prices, stock flags, and specs are
-// PLACEHOLDERS until a real catalogue exists. `reviews` is one page of the reviews endpoint.
+// The flagship, in the shape Buy and the cart drawer already read.
+// The catalogue itself lives in products.js. Prices and stock there are
+// PLACEHOLDERS. `reviews` is one page of the reviews endpoint.
+
+import { flagship } from './products';
 
 export const product = {
-  id: 'noir-over-ear',
-  name: 'Noir',
+  id: flagship.id,
+  name: flagship.name,
   placeholder: true,
   currency: 'USD',
-  specs: [
-    { id: 'driver', label: 'Driver', value: '40 mm dynamic' },
-    { id: 'frequency', label: 'Frequency response', value: '4 Hz – 40 kHz' },
-    { id: 'isolation', label: 'Isolation', value: '−22 dB passive' },
-    { id: 'battery', label: 'Battery', value: '30 hours' },
-    { id: 'weight', label: 'Weight', value: '268 g' },
-    { id: 'charging', label: 'Charging', value: 'USB-C' },
-    { id: 'mics', label: 'Microphones', value: '4' },
-  ],
-  // `stock` is "in_stock" or "out_of_stock". `price` is whole dollars.
-  colorways: [
-    { id: 'maroon', stock: 'in_stock', price: 449 },
-    { id: 'sky', stock: 'in_stock', price: 429 },
-    { id: 'noir', stock: 'in_stock', price: 399 },
-    { id: 'ivory', stock: 'out_of_stock', price: 449 },
-  ],
+  specs: flagship.specs,
+  colorways: flagship.colorways.map(({ id, stock, price }) => ({ id, stock, price })),
 };
 
 export const reviews = {

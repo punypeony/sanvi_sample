@@ -1,5 +1,7 @@
 import { useRef } from 'react';
+import { Link } from 'react-router';
 import { ArrowUpRight } from 'lucide-react';
+import { flagship, flagshipPath } from '../data/products';
 import ColorPicker from '../components/ColorPicker';
 import RevealText from './RevealText';
 import { gsap, MQ, ScrollTrigger, useGSAP } from '../scroll/gsap';
@@ -15,7 +17,7 @@ export const HERO_EXIT_SPIN = 0.5;
 
 // Not a stacking context on purpose: the title sits behind the 3D canvas
 // (z 1) and the controls in front of it (z 5+). See App.css.
-export default function Hero({ colorId, colorway, onColorChange }) {
+export default function Hero({ colorId, onColorChange }) {
   const ref = useRef(null);
 
   useGSAP(
@@ -84,20 +86,15 @@ export default function Hero({ colorId, colorway, onColorChange }) {
       <ColorPicker value={colorId} onChange={onColorChange} />
 
       <div className="hero-actions">
-        <a href="#buy" className="outline-button">
-          Buy Now
-          <span className="hero-swatch-label">
-            ·
-            <span aria-hidden="true" className="hero-swatch" style={{ background: colorway.swatch }} />
-            {colorway.name}
-          </span>
-        </a>
-        <a href="#teardown" className="light-button">
-          Learn More <ArrowUpRight size={15} aria-hidden="true" />
-        </a>
+        <Link to="/shop" className="light-button">
+          Shop now
+        </Link>
+        <Link to={flagshipPath} className="outline-button">
+          Explore {flagship.name} <ArrowUpRight size={15} aria-hidden="true" />
+        </Link>
       </div>
 
-      <a href="#teardown" className="scroll-cue">
+      <a href="#featured" className="scroll-cue">
         <span>Scroll to explore</span>
         <span className="scroll-cue-line" aria-hidden="true" />
       </a>

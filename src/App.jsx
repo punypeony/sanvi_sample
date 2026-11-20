@@ -1,26 +1,31 @@
-import { useEffect, useState } from 'react';
-import ModelInspector from './three/ModelInspector';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { Outlet, Route, Routes, useLocation, useSearchParams } from 'react-router';
+import { isStoryPath } from './data/products';
 import { COLORWAYS_BY_ID, DEFAULT_COLORWAY_ID } from './three/colorways';
+import ShopSkeleton from './shop/ShopSkeleton';
 import Navbar from './sections/Navbar';
-import Hero from './sections/Hero';
-import Teardown from './sections/Teardown';
-import Colorways from './sections/Colorways';
-import Sound from './sections/Sound';
-import Reviews from './sections/Reviews';
-import Buy from './sections/Buy';
-import Closer from './sections/Closer';
 import { ScrollTrigger } from './scroll/gsap';
 import { useSmoothScroll } from './scroll/useSmoothScroll';
-import { useStageCover } from './scroll/useStageCover';
+import { useRouteScroll } from './scroll/useRouteScroll';
 import './App.css';
+
+const Stage = lazy(() => import('./stage/Stage'));
+const Home = lazy(() => import('./pages/Home'));
+const Shop = lazy(() => import('./pages/Shop'));
+const Product = lazy(() => import('./pages/Product'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 const STORAGE_KEY = 'noir-color';
 
-// Order of priority: ?color=sky in the URL, then the last saved choice, then the default.
 function readInitialColor() {
   try {
+    const path = window.location.pathname;
+    const onShop = path === '/shop' || path === '/shop/';
     const fromUrl = new URLSearchParams(window.location.search).get('color');
-    if (fromUrl && COLORWAYS_BY_ID[fromUrl]) return fromUrl;
+    // /shop?color= is a catalog filter. It must not become the model color.
+    if (!onShop && fromUrl && COLORWAYS_BY_ID[fromUrl]) return fromUrl;
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved && COLORWAYS_BY_ID[saved]) return saved;
   } catch {
@@ -29,30 +34,43 @@ function readInitialColor() {
   return DEFAULT_COLORWAY_ID;
 }
 
-function App() {
-  const [colorId, setColorId] = useState(readInitialColor);
-  const colorway = COLORWAYS_BY_ID[colorId];
+function RouteFallback() {
+  const { pathname } = useLocation();
+  if (pathname === '/shop') return <ShopSkeleton />;
+  return <p className="sr-only">Loading</p>;
+}
 
-  // Remember the choice (and keep the URL shareable).
+function Shell() {
+  const { pathname } = useLocation();
+  const [params, setParams] = useSearchParams();
+  const [colorId, setColorId] = useState(readInitialColor);
+  const story = isStoryPath(pathname);
+
+  useSmoothScroll();
+  useRouteScroll(pathname);
+
+  useEffect(() => {
+    document.fonts?.ready.then(() => ScrollTrigger.refresh());
+  }, []);
+
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, colorId);
-      const url = new URL(window.location.href);
-      url.searchParams.set('color', colorId);
-      window.history.replaceState(null, '', url);
     } catch {
       /* ignore */
     }
   }, [colorId]);
 
-  useSmoothScroll();
-  // After the sections: their pins must be measured before the cover ranges.
-  useStageCover();
-
-  // Web fonts change text heights, which moves every trigger below them.
+  // ?color= belongs to the model. The shop owns its own query string,
+  // so the model color is not written on /shop.
   useEffect(() => {
-    document.fonts?.ready.then(() => ScrollTrigger.refresh());
-  }, []);
+    if (!story) return undefined;
+    if (params.get('color') === colorId) return undefined;
+    const next = new URLSearchParams(params);
+    next.set('color', colorId);
+    setParams(next, { replace: true });
+    return undefined;
+  }, [story, colorId, params, setParams]);
 
   return (
     <>
@@ -60,20 +78,32 @@ function App() {
         Skip to content
       </a>
       <Navbar />
-      <ModelInspector colorId={colorId} />
-
+      <p id="route-announcer" className="sr-only" aria-live="polite" />
+      {story && (
+        <Suspense fallback={null}>
+          <Stage colorId={colorId} />
+        </Suspense>
+      )}
       <main id="main" className="page">
-        <Hero colorId={colorId} colorway={colorway} onColorChange={setColorId} />
-
-        <Teardown />
-        <Colorways />
-        <Sound />
-        <Reviews />
-        <Buy colorId={colorId} onColorChange={setColorId} />
-        <Closer />
+        <Suspense fallback={<RouteFallback />}>
+          <Outlet context={{ colorId, onColorChange: setColorId }} />
+        </Suspense>
       </main>
     </>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<Shell />}>
+        <Route index element={<Home />} />
+        <Route path="shop" element={<Shop />} />
+        <Route path="products/:slug" element={<Product />} />
+        <Route path="cart" element={<Cart />} />
+        <Route path="checkout" element={<Checkout />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  );
+}
