@@ -236,9 +236,11 @@ function mountPin(section, mobile) {
     if (lastP >= 0 && Math.abs(p - lastP) > SNAP_PROGRESS) scrollStore.poseEpoch++;
     lastP = p;
 
-    // At and before the pin, the hero still owns the rotation.
+    // At and before the pin, the hero still owns the rotation. The start
+    // edge is the exception: a jump onto it must not keep a later section's spin.
     if (p <= 0) {
       clearPose();
+      if (Math.abs(window.scrollY - self.start) <= 4) scrollStore.rotationY = HERO_EXIT_SPIN;
       show(-1, dir, scrollStore.snap);
       return;
     }

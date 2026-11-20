@@ -1,5 +1,7 @@
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { ShoppingBag } from 'lucide-react';
+import CartDrawer from '../cart/CartDrawer';
+import { setCartOpen, useCart, useCartOpen } from '../cart/useCart';
 import { ScrollTrigger, prefersReducedMotion, useGSAP } from '../scroll/gsap';
 import { subscribeScroll } from '../scroll/useSmoothScroll';
 
@@ -11,15 +13,18 @@ const DIR_DELTA = 12;
 const TOP_EDGE = 6;
 
 const LINKS = [
-  { href: '#teardown', label: 'Teardown' },
-  { href: '#colors', label: 'Colors' },
-  { href: '#sound', label: 'Sound' },
-  { href: '#reviews', label: 'Reviews' },
-  { href: '#buy', label: 'Buy' },
+  { href: '#top', label: 'Home' },
+  { href: '#teardown', label: 'Products' },
+  { href: '#buy', label: 'Pricing' },
+  { href: '#sound', label: 'About' },
+  { href: '#contact', label: 'Contact' },
 ];
 
 export default function Navbar() {
   const ref = useRef(null);
+  const { lines, count } = useCart();
+  const open = useCartOpen();
+  const closeCart = useCallback(() => setCartOpen(false), []);
 
   // Gets a backdrop once the page has moved, so links stay readable over content.
   // Hides on the way down, comes back on the way up, while focused, or when
@@ -129,9 +134,21 @@ export default function Navbar() {
         </ul>
       </nav>
 
-      <a href="#buy" className="shop-button">
-        Shop <ShoppingBag size={15} aria-hidden="true" />
-      </a>
+      <div className="nav-actions">
+        <button
+          type="button"
+          className="cart-button"
+          aria-label={count === 0 ? 'Cart, empty' : `Cart, ${count} ${count === 1 ? 'item' : 'items'}`}
+          onClick={() => setCartOpen(true)}
+        >
+          <ShoppingBag size={15} aria-hidden="true" />
+          {count > 0 && <span className="cart-badge">{count}</span>}
+        </button>
+        <a href="#buy" className="shop-button">
+          Shop
+        </a>
+      </div>
+      {open && <CartDrawer lines={lines} onClose={closeCart} />}
     </header>
   );
 }

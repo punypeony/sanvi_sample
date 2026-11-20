@@ -1,5 +1,29 @@
-// Placeholder catalogue payload, shaped like the reviews endpoint.
-// `average` and `count` are the catalogue totals. `reviews` is one page.
+// Placeholder catalogue payload, shaped like an API response.
+// `product` is the product document. Its prices, stock flags, and specs are
+// PLACEHOLDERS until a real catalogue exists. `reviews` is one page of the reviews endpoint.
+
+export const product = {
+  id: 'noir-over-ear',
+  name: 'Noir',
+  placeholder: true,
+  currency: 'USD',
+  specs: [
+    { id: 'driver', label: 'Driver', value: '40 mm dynamic' },
+    { id: 'frequency', label: 'Frequency response', value: '4 Hz – 40 kHz' },
+    { id: 'isolation', label: 'Isolation', value: '−22 dB passive' },
+    { id: 'battery', label: 'Battery', value: '30 hours' },
+    { id: 'weight', label: 'Weight', value: '268 g' },
+    { id: 'charging', label: 'Charging', value: 'USB-C' },
+    { id: 'mics', label: 'Microphones', value: '4' },
+  ],
+  // `stock` is "in_stock" or "out_of_stock". `price` is whole dollars.
+  colorways: [
+    { id: 'maroon', stock: 'in_stock', price: 449 },
+    { id: 'sky', stock: 'in_stock', price: 429 },
+    { id: 'noir', stock: 'in_stock', price: 399 },
+    { id: 'ivory', stock: 'out_of_stock', price: 449 },
+  ],
+};
 
 export const reviews = {
   average: 4.8,

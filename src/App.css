@@ -752,16 +752,15 @@ button {
 ======================================== */
 
 .sound-stage {
-  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100vh;
   height: 100lvh;
+  padding: calc(75px + 4vh) 7vw 5vh;
   overflow: hidden;
 }
 
 .sound-eyebrow {
-  position: absolute;
-  top: calc(75px + 4vh);
-  left: 7vw;
   font-size: 12px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -769,11 +768,12 @@ button {
 }
 
 .sound-copy {
-  position: absolute;
-  top: 46%;
-  left: 7vw;
   width: min(520px, 40vw);
-  transform: translateY(-50%);
+  align-self: center;
+  min-height: 0;
+  /* The word slide stays inside this cell, so it cannot paint over the dock. */
+  padding-block: 1.75rem;
+  overflow: hidden;
 }
 
 .sound-words {
@@ -797,13 +797,22 @@ button {
   line-height: 1.45;
 }
 
+.sound-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: min(520px, 100%);
+}
+
 .sound-line {
   height: 1.5em;
-  margin-top: 18px;
+  margin: 0;
   overflow: hidden;
   color: #b4b8c0;
   font-size: 16px;
   line-height: 1.5;
+  pointer-events: none;
 }
 
 .sound-line-inner {
@@ -811,10 +820,8 @@ button {
 }
 
 .sound-controls {
-  position: absolute;
-  left: 7vw;
-  bottom: 8vh;
-  z-index: 2;
+  position: relative;
+  z-index: 1;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -977,16 +984,393 @@ button {
 }
 
 /* ========================================
-   TEMPORARY PLACEHOLDER (removed in step e)
+   BUY
+   Transparent. The panel stays on the left; the model shifts aside.
 ======================================== */
 
-.placeholder {
-  min-height: 150vh;
-  padding: 120px 7.5%;
+.buy {
+  min-height: 100vh;
+  min-height: 100lvh;
+  display: flex;
+  align-items: center;
+  padding: calc(75px + 6vh) 7vw 10vh;
+}
+
+.buy-panel {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.buy-eyebrow {
   font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8b8f98;
+}
+
+.buy-name {
+  font-size: clamp(48px, 6vw, 80px);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.9;
+}
+
+.buy-price {
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.buy-color {
+  color: #b4b8c0;
+  font-size: 16px;
+}
+
+.buy-mask {
+  display: block;
+  overflow: hidden;
+  height: 1.2em;
+  line-height: 1.2;
+}
+
+.buy-mask-inner {
+  display: block;
+}
+
+.buy-colors {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.buy-swatch input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+
+.buy-swatch input:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.buy-swatch input:checked {
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px #fff;
+}
+
+.buy-swatch.is-unavailable input {
+  opacity: 0.38;
+}
+
+.buy-status {
+  min-height: 1.4em;
+  color: #b4b8c0;
+  font-size: 13px;
+}
+
+.buy-stepper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.buy-stepper button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #888;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.buy-stepper button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.buy-qty {
+  min-width: 1.2em;
+  text-align: center;
+  font-size: 14px;
+}
+
+.buy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.buy-add,
+.buy-notify,
+.closer-button,
+.cart-checkout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 28px;
+  border: 1px solid #fff;
+  border-radius: 30px;
+  background: #fff;
+  color: #000;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.buy-add:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.buy-notify,
+.closer-button {
+  background: transparent;
+  color: #fff;
+}
+
+.buy-specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+  width: 100%;
+  margin: 8px 0 0;
+}
+
+.buy-specs dt {
+  color: #8b8f98;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.buy-specs dd {
+  margin: 3px 0 0;
+  font-size: 14px;
+}
+
+/* ========================================
+   CLOSING CTA + FOOTER
+   Opaque, and tall enough that the canvas actually pauses.
+======================================== */
+
+.closer-cta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 28px;
+  min-height: 100vh;
+  min-height: 100lvh;
+  padding: 14vh 7vw 12vh;
+  overflow: hidden;
+  background: #000;
+}
+
+.closer-bg {
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(ellipse at 18% 80%, rgba(150, 168, 196, 0.38), transparent 52%),
+    radial-gradient(ellipse at 82% 18%, rgba(90, 96, 112, 0.45), transparent 46%),
+    #000;
+}
+
+.closer-title {
+  position: relative;
+  z-index: 1;
+  max-width: 9em;
+  font-size: clamp(64px, 11vw, 156px);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 0.88;
+}
+
+.closer-button {
+  position: relative;
+  z-index: 1;
+}
+
+.site-footer {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(4, 1fr);
+  gap: 28px 24px;
+  padding: 72px 7vw 36px;
+  border-top: 1px solid #222;
+  background: #000;
+}
+
+.footer-logo {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.footer-brand p + p {
+  margin-top: 12px;
+  max-width: 24em;
+  color: #8b8f98;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.site-footer h3 {
+  margin-bottom: 12px;
+  color: #8b8f98;
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+}
+
+.site-footer ul {
+  list-style: none;
+}
+
+.site-footer a {
+  display: inline-block;
+  padding: 4px 0;
+  color: #e4e4e4;
+  font-size: 14px;
+}
+
+.footer-copy {
+  grid-column: 1 / -1;
   color: #6b6b6b;
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .closer-bg {
+    animation: closer-drift 18s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes closer-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(0, -2%, 0) scale(1.06); }
+}
+
+/* ========================================
+   CART
+======================================== */
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cart-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #888;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #fff;
+  color: #000;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.cart-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: min(380px, 100%);
+  height: 100vh;
+  height: 100lvh;
+  padding: 28px 24px;
+  background: #0c0c0c;
+  border-left: 1px solid #2a2a2a;
+}
+
+.cart-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cart-drawer-head h2 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.cart-drawer-head button {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.cart-lines {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cart-lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.cart-note {
+  min-height: 1.4em;
+  color: #b4b8c0;
+  font-size: 13px;
+}
+
+.cart-checkout {
+  margin-top: auto;
+}
+
+.cart-checkout:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* ========================================
@@ -1019,6 +1403,32 @@ button {
 
   .shop-button {
     padding: 8px 17px;
+  }
+
+  .buy {
+    align-items: flex-end;
+    padding: calc(65px + 2vh) 5vw 4vh;
+  }
+
+  .buy-panel {
+    width: 100%;
+  }
+
+  .buy-name {
+    font-size: 40px;
+  }
+
+  .buy-specs {
+    width: 100%;
+  }
+
+  .closer-cta {
+    padding: 12vh 5vw 8vh;
+  }
+
+  .site-footer {
+    grid-template-columns: 1fr 1fr;
+    padding: 48px 5vw 28px;
   }
 
   .hero {
@@ -1149,28 +1559,17 @@ button {
     height: 42vh;
   }
 
-  .sound-eyebrow {
-    top: calc(65px + 2.5vh);
-    left: 5vw;
+  .sound-stage {
+    padding: calc(65px + 2.5vh) 5vw 4vh;
   }
 
-  .sound-copy {
-    top: auto;
-    bottom: 22vh;
-    left: 5vw;
-    width: auto;
-    right: 5vw;
-    transform: none;
+  .sound-copy,
+  .sound-dock {
+    width: 100%;
   }
 
   .sound-word {
     font-size: clamp(40px, 12vw, 64px);
-  }
-
-  .sound-controls {
-    left: 5vw;
-    right: 5vw;
-    bottom: 5vh;
   }
 
   .reviews {

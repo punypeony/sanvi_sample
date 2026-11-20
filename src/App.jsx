@@ -7,6 +7,8 @@ import Teardown from './sections/Teardown';
 import Colorways from './sections/Colorways';
 import Sound from './sections/Sound';
 import Reviews from './sections/Reviews';
+import Buy from './sections/Buy';
+import Closer from './sections/Closer';
 import { ScrollTrigger } from './scroll/gsap';
 import { useSmoothScroll } from './scroll/useSmoothScroll';
 import { useStageCover } from './scroll/useStageCover';
@@ -67,11 +69,8 @@ function App() {
         <Colorways />
         <Sound />
         <Reviews />
-
-        {/* TEMPORARY stand-in, replaced by the real section in step (e). */}
-        <section id="buy" className="section section--opaque placeholder" aria-label="Buy" data-stage-cover>
-          <h2>Buy</h2>
-        </section>
+        <Buy colorId={colorId} onColorChange={setColorId} />
+        <Closer />
       </main>
     </>
   );

@@ -6,6 +6,9 @@ import { scrollStore } from '../scroll/scrollStore';
 import { notifyHighlight } from '../three/modelFocus';
 import { COLORWAYS_EXIT_SPIN } from './Colorways';
 
+// Buy starts here. Same angle as the end of this pin, so the damper never unwinds.
+export const SOUND_EXIT_SPIN = COLORWAYS_EXIT_SPIN;
+
 // ---- Sound tuning ----
 // How far you scroll while the section stays pinned.
 const PIN_VH = { desktop: 300, mobile: 220 };
@@ -43,7 +46,7 @@ function writePose(shiftX, shiftY) {
   scrollStore.activePartIndex = -1;
   scrollStore.framing = 'home';
   scrollStore.cameraDistance = 1;
-  scrollStore.rotationY = COLORWAYS_EXIT_SPIN;
+  scrollStore.rotationY = SOUND_EXIT_SPIN;
   scrollStore.shiftX = shiftX;
   scrollStore.shiftY = shiftY;
   scrollStore.colorId = null;
@@ -164,7 +167,10 @@ function mountPin(section, mobile) {
     if (p >= 1) {
       setLive(false);
       showWord(-1, dir, instant);
-      writePose(0, 0);
+      // Hold the exit pose through Reviews. Buy owns it once that section
+      // has started; writing here as well would pull the model back to center.
+      const buy = ScrollTrigger.getAll().find((t) => t.trigger && t.trigger.id === 'buy');
+      if (!buy || window.scrollY < buy.start - 4) writePose(0, 0);
       return;
     }
 
@@ -283,12 +289,14 @@ export default function Sound() {
               </li>
             ))}
           </ol>
+        </div>
+        <div className="sound-dock">
+          <div className="sound-controls">
+            <AudioControls />
+          </div>
           <p className="sound-line" aria-hidden="true">
             <span className="sound-line-inner" />
           </p>
-        </div>
-        <div className="sound-controls">
-          <AudioControls />
         </div>
       </div>
     </section>

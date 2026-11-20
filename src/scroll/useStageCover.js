@@ -25,7 +25,8 @@ export function useStageCover() {
       for (let i = 0; i < ranges.length && !covered; i++) {
         const { start, end } = ranges[i];
         // No margin needed on a side the page can't scroll past (top / bottom of the document).
-        covered = end > start && y >= start + Math.min(m, start) && y <= end - Math.min(m, max - end);
+        // +1 absorbs a fractional scroll past the last pixel, which Lenis can report.
+        covered = end > start && y >= start + Math.min(m, start) && y <= end - Math.min(m, Math.max(0, max - end)) + 1;
       }
       setVisible(!covered);
     };
